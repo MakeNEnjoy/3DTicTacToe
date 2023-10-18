@@ -1,7 +1,7 @@
 use std::fmt;
 use itertools::iproduct;
 
-use crate::game::{GameState, Move};
+use crate::game::{GameState};
 
 #[derive(Debug, Clone, Copy)]
 enum Player {
@@ -191,19 +191,13 @@ impl<'a> TicMove<'a> {
     }
 }
 
-impl Move for TicMove<'_> {
-    fn do_move(&self) -> Box<dyn GameState> {
-        Box::new(self.do_move())
-    }
-}
-
 impl GameState for Board {
-    fn get_moves(&self) -> Vec<Box<dyn Move + '_>> {
-        let mut moves: Vec<Box<dyn Move>> = Vec::new();
-        for m in TicMove::iter_moves(self) {
-            moves.push(Box::new(m));
+    fn next_states(&self) -> Vec<Box<dyn GameState>> {
+        let mut states: Vec<Box<dyn GameState>> = Vec::new();
+        for m in TicMove::iter_moves(self).map(|m| m.do_move()) {
+            states.push(Box::new(m));
         }
-        moves
+        states
     }
 }
 

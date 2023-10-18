@@ -23,8 +23,7 @@ fn traverse_tree(root: Box<dyn GameState>, max: &mut u32) {
     }
     *max += 1;
 
-    for edge in root.get_moves() {
-        let child = edge.do_move();
+    for child in root.next_states() {
         traverse_tree(child, max);
     }
 }
