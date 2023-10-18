@@ -1,0 +1,1 @@
+Map<ConsTuples<itertools::Product<ConsTuples<itertools::Product<ConsTuples<itertools::Product<itertools::Product<impl Iterator<Item = Player>, std::ops::Range<usize>>, std::ops::Range<usize>>, ((Player, usize), usize)>, std::ops::Range<usize>>, ((Player, usize, usize), usize)>, std::ops::Range<usize>>, ((Player, usize, usize, usize), usize)>, [closure@src/tic.rs:111:14: 111:35]>
