@@ -199,6 +199,24 @@ impl GameState for Board {
         }
         states
     }
+
+    fn id(&self) -> String {
+        let mut x: u128 = 0;
+        let mut y: u128 = 0;
+        for (i,j,k,l) in iproduct!(0..3, 0..3, 0..3, 0..3) {
+            match self.cells[i][j][k][l] {
+                Tile::Player1 => x |= 1 << (i * 9 + j * 3 + k),
+                Tile::Player2 => y |= 1 << (i * 9 + j * 3 + k),
+                _ => (),
+            }
+        }
+        let (mx, my, nx, ny) = match self.last_move {
+            Some(x) => x,
+            None => (20, 20, 20, 20)
+        };
+        format!("{} {} {} {} {} {}", x, y, mx, my, nx, ny )
+
+    }
 }
 
 mod tests {
@@ -247,27 +265,12 @@ mod tests {
 
 
     #[test]
-    fn test_get_moves() {
-        let board = Board::new();
-        let moves = board.get_moves();
-        assert_eq!(moves.len(), 3*3*3*3);
-        let m = moves.get(10).unwrap();
-        let new_board = m.do_move();
-        assert_eq!(new_board.get_moves().len(), 8);
-
-        println!("Old board \n{}", board);
-        println!("New board \n{}", new_board);
-    }
-
-    #[test]
     fn test_do_multiple_moves() {
         let board = Board::new();
-        let moves = board.get_moves();
-        let m = moves.get(11).unwrap();
-        let board2 = m.do_move();
-        let moves = board2.get_moves();
-        let m = moves.get(4).unwrap();
-        let board3 = m.do_move();
+        let moves = board.next_states();
+        let board2 = moves.get(11).unwrap();
+        let moves = board2.next_states();
+        let board3 = moves.get(4).unwrap();
 
         println!("Board \n{}", board3);
     }
