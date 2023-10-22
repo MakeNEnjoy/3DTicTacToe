@@ -32,9 +32,6 @@ where T: GameState<Implementation = T> + Eq + Hash
 
 fn main() {
     let empty_board = Board::new();
-    // let mut max = 0;
-    // traverse_tree(Box::new(empty_board), &mut max);
     let mut map: HashSet<Board> = HashSet::with_capacity(10);
     traverse_tree_with_storing_and_generics(empty_board, &mut map, &mut 0);
-    println!("Hello, world!");
 }
