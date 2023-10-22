@@ -1,1 +1,0 @@
-Map<ConsTuples<itertools::Product<ConsTuples<itertools::Product<itertools::Product<std::ops::Range<usize>, std::ops::Range<usize>>, std::ops::Range<usize>>, ((usize, usize), usize)>, std::ops::Range<usize>>, ((usize, usize, usize), usize)>, [closure@src/tic.rs:117:14: 117:19]>
