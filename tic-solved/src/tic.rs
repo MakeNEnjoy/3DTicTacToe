@@ -1,9 +1,9 @@
 use std::fmt;
 use itertools::iproduct;
 
-use crate::game::{GameState};
+use crate::game::GameState;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Player {
     Player1,
     Player2
@@ -18,7 +18,7 @@ impl Player {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Tile {
     Player1,
     Player2,
@@ -44,7 +44,7 @@ impl From<Player> for Tile {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Board {
     cells: [[[[Tile; 3]; 3]; 3]; 3],
     player_to_move: Player,
@@ -192,30 +192,13 @@ impl<'a> TicMove<'a> {
 }
 
 impl GameState for Board {
-    fn next_states(&self) -> Vec<Box<dyn GameState>> {
-        let mut states: Vec<Box<dyn GameState>> = Vec::new();
+    type Implementation = Board;
+    fn next_states(&self) -> Vec<Board> {
+        let mut states: Vec<Board> = Vec::new();
         for m in TicMove::iter_moves(self).map(|m| m.do_move()) {
-            states.push(Box::new(m));
+            states.push(m);
         }
         states
-    }
-
-    fn id(&self) -> String {
-        let mut x: u128 = 0;
-        let mut y: u128 = 0;
-        for (i,j,k,l) in iproduct!(0..3, 0..3, 0..3, 0..3) {
-            match self.cells[i][j][k][l] {
-                Tile::Player1 => x |= 1 << (i * 9 + j * 3 + k),
-                Tile::Player2 => y |= 1 << (i * 9 + j * 3 + k),
-                _ => (),
-            }
-        }
-        let (mx, my, nx, ny) = match self.last_move {
-            Some(x) => x,
-            None => (20, 20, 20, 20)
-        };
-        format!("{} {} {} {} {} {}", x, y, mx, my, nx, ny )
-
     }
 }
 

@@ -1,42 +1,32 @@
 use std::collections::HashSet;
+use std::hash::Hash;
 
 mod game;
 mod tic;
 
 use tic::*;
 use game::*;
-// TODO Try make this tree thing use a generic that implements gamestate and hashable.
-fn traverse_tree_with_storing(root: Box<dyn GameState>, map: &mut HashSet<String>, counter: &mut u64) {
-    if map.contains(&root.id()) {
+
+fn traverse_tree_with_storing_and_generics<T>(root: T, map: &mut HashSet<T>, counter: &mut u64) 
+where T: GameState<Implementation = T> + Eq + Hash
+{
+    if map.contains(&root) {
         *counter += 1;
         return;
     }
-    map.insert(root.id());
+
+    let states = root.next_states();
+
+    map.insert(root);
 
     let size = map.len();
     if size % 100000 == 0 {
-        println!("root.id()={:?} size={} hits={}", root.id(), size, counter);
+        println!("size={} hits={}", size, counter);
         *counter = 0;
     }
 
-    for child in root.next_states() {
-        traverse_tree_with_storing(child, map, counter);
-    }
-}
-
-
-fn traverse_tree(root: Box<dyn GameState>, max: &mut u32) {
-    // if counter > *max {
-    //     println!("{}/475", counter);
-    //     *max = counter;
-    // }
-    if *max % 1000 == 0 {
-        println!("{}", max);
-    }
-    *max += 1;
-
-    for child in root.next_states() {
-        traverse_tree(child, max);
+    for child in states {
+        traverse_tree_with_storing_and_generics(child, map, counter);
     }
 }
 
@@ -44,7 +34,7 @@ fn main() {
     let empty_board = Board::new();
     // let mut max = 0;
     // traverse_tree(Box::new(empty_board), &mut max);
-    let mut map: HashSet<String> = HashSet::with_capacity(10);
-    traverse_tree_with_storing(Box::new(empty_board), &mut map, &mut 0);
+    let mut map: HashSet<Board> = HashSet::with_capacity(10);
+    traverse_tree_with_storing_and_generics(empty_board, &mut map, &mut 0);
     println!("Hello, world!");
 }
