@@ -1,13 +1,13 @@
 use crate::game::*;
 
-pub fn minmax_score<T>(root: T, steps_to_search: usize) -> <T as HeuristicGameState>::Score
-where T: HeuristicGameState<StateImplementation = T>,
+pub fn minmax_score<T, U>(root: T, steps_to_search: usize) -> <T as HeuristicGameState<U>>::Score
+where T: HeuristicGameState<U, StateImplementation = T>,
 {
     max_score(root, steps_to_search)
 }
 
-fn max_score<T>(root: T, steps_to_search: usize) -> <T as HeuristicGameState>::Score
-where T: HeuristicGameState<StateImplementation = T>,
+fn max_score<T, U>(root: T, steps_to_search: usize) -> <T as HeuristicGameState<U>>::Score
+where T: HeuristicGameState<U, StateImplementation = T>,
 {
     let states = root.next_states();
     if states.is_empty() || steps_to_search == 0 {
@@ -27,8 +27,8 @@ where T: HeuristicGameState<StateImplementation = T>,
     best_score.unwrap()
 }
 
-pub fn min_score<T>(root: T, steps_to_search: usize) -> <T as HeuristicGameState>::Score
-where T: HeuristicGameState<StateImplementation = T>,
+pub fn min_score<T,U>(root: T, steps_to_search: usize) -> <T as HeuristicGameState<U>>::Score
+where T: HeuristicGameState<U, StateImplementation = T>,
 {
     let states = root.next_states();
     if states.is_empty() || steps_to_search == 0 {

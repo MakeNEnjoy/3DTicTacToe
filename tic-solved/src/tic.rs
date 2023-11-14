@@ -347,7 +347,9 @@ impl GameState for Board {
     }
 }
 
-impl HeuristicGameState for Board {
+pub struct AlmostWinHeuristic {}
+
+impl HeuristicGameState<AlmostWinHeuristic> for Board {
     type Score = i32;
     fn score(&self) -> Self::Score {
         if self.board_winner() == Some(Player::Player1) {

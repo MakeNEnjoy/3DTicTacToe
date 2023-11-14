@@ -3,7 +3,7 @@ pub trait GameState {
     fn next_states(&self) -> Vec<Self::StateImplementation>;
 }
 
-pub trait HeuristicGameState: GameState {
+pub trait HeuristicGameState<T>: GameState {
     type Score: Copy + PartialEq + PartialOrd;
     fn score(&self) -> Self::Score;
 }
