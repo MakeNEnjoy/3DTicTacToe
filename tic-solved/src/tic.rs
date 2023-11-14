@@ -75,17 +75,17 @@ impl Board {
         // Check horizontal lines
         for x2 in 0..3 {
             if self.cells[x0][x1][x2][0] == self.cells[x0][x1][x2][1] {
-                if self.cells[x0][x1][x2][0] == player.into() {
+                if self.cells[x0][x1][x2][0] == player.into() && self.cells[x0][x1][x2][2] == Tile::Empty{
                     count += 1;
                 }
             }
             if self.cells[x0][x1][x2][1] == self.cells[x0][x1][x2][2] {
-                if self.cells[x0][x1][x2][1] == player.into() {
+                if self.cells[x0][x1][x2][1] == player.into()  && self.cells[x0][x1][x2][0] == Tile::Empty {
                     count += 1;
                 }
             }
             if self.cells[x0][x1][x2][0] == self.cells[x0][x1][x2][2] {
-                if self.cells[x0][x1][x2][0] == player.into() {
+                if self.cells[x0][x1][x2][0] == player.into() && self.cells[x0][x1][x2][1] == Tile::Empty {
                     count += 1;
                 }
             }
@@ -93,17 +93,17 @@ impl Board {
         // Check vertical lines
         for x3 in 0..2 {
             if self.cells[x0][x1][0][x3] == self.cells[x0][x1][1][x3] {
-                if self.cells[x0][x1][0][x3] == player.into() {
+                if self.cells[x0][x1][0][x3] == player.into() && self.cells[x0][x1][2][x3] == Tile::Empty{
                     count += 1;
                 }
             }
-            if self.cells[x0][x1][1][x3] == self.cells[x0][x1][2][x3] {
+            if self.cells[x0][x1][1][x3] == self.cells[x0][x1][2][x3] && self.cells[x0][x1][0][x3] == Tile::Empty {
                 if self.cells[x0][x1][1][x3] == player.into() {
                     count += 1;
                 }
             }
             if self.cells[x0][x1][0][x3] == self.cells[x0][x1][2][x3] {
-                if self.cells[x0][x1][0][x3] == player.into() {
+                if self.cells[x0][x1][0][x3] == player.into() && self.cells[x0][x1][1][x3] == Tile::Empty {
                     count += 1;
                 }
             }
@@ -111,32 +111,32 @@ impl Board {
 
         // Check diagonal lines
         if self.cells[x0][x1][0][0] == self.cells[x0][x1][1][1] {
-            if self.cells[x0][x1][0][0] == player.into() {
+            if self.cells[x0][x1][0][0] == player.into() && self.cells[x0][x1][2][2] == Tile::Empty {
                 count += 1;
             }
         }
         if self.cells[x0][x1][1][1] == self.cells[x0][x1][2][2] {
-            if self.cells[x0][x1][1][1] == player.into() {
+            if self.cells[x0][x1][1][1] == player.into() && self.cells[x0][x1][0][0] == Tile::Empty {
                 count += 1;
             }
         }
-        if self.cells[x0][x1][0][0] == self.cells[x0][x1][2][2] {
-            if self.cells[x0][x1][0][0] == player.into() {
+        if self.cells[x0][x1][0][0] == self.cells[x0][x1][2][2] { // Check that middle is empty
+            if self.cells[x0][x1][0][0] == player.into() && self.cells[x0][x1][1][1] == Tile::Empty {
                 count += 1;
             }
         }
         if self.cells[x0][x1][1][1] == self.cells[x0][x1][2][0] {
-            if self.cells[x0][x1][1][1] == player.into() {
+            if self.cells[x0][x1][1][1] == player.into() && self.cells[x0][x1][0][2] == Tile::Empty {
                 count += 1;
             }
         }
         if self.cells[x0][x1][0][2] == self.cells[x0][x1][1][1] {
-            if self.cells[x0][x1][0][2] == player.into() {
+            if self.cells[x0][x1][0][2] == player.into() && self.cells[x0][x1][2][0] == Tile::Empty {
                 count += 1;
             }
         }
         if self.cells[x0][x1][2][0] == self.cells[x0][x1][0][2] {
-            if self.cells[x0][x1][2][0] == player.into() {
+            if self.cells[x0][x1][2][0] == player.into() && self.cells[x0][x1][1][1] == Tile::Empty {
                 count += 1;
             }
         }
@@ -250,7 +250,7 @@ where T: Copy + fmt::Display, {
     let max_length = data.iter()
         .map(|item| item.to_string().len())
         .max()
-        .unwrap_or(0);
+        .unwrap();
     for i in 0..3 {
         for k in 0..3 {
             for j in 0..3 {
@@ -271,7 +271,7 @@ where T: Copy + fmt::Display, {
                             1
                         }
                     };
-                    for space_num in 0..max_length-length {
+                    for _ in 0..max_length-length {
                         print!(" ");
                     }
                 }
@@ -350,10 +350,10 @@ impl GameState for Board {
 impl HeuristicGameState for Board {
     type Score = i32;
     fn score(&self) -> Self::Score {
-        if self.board_winner() == Some(self.player_to_move) {
+        if self.board_winner() == Some(Player::Player1) {
             return -1000;
         }
-        if self.board_winner() == Some(self.player_to_move.get_other_player()) {
+        if self.board_winner() == Some(Player::Player2) {
             return 1000;
         }
 
@@ -361,20 +361,19 @@ impl HeuristicGameState for Board {
         for x0 in 0..3 {
             for x1 in 0..3 {
                 match self.single_board_winner(x0, x1) {
-                    // Some(self.player_to_move) => {count += 1;}
-                    // Some(self.player_to_move) => {count -= 1}
-                    Some(player) => {
-                        if player == self.player_to_move.get_other_player() {
-                            count += 3;
-                        } else if player == self.player_to_move {
+                    Some(player) => match player {
+                        Player::Player1 => {
                             count -= 3;
                         }
-                    }
+                        Player::Player2 => {
+                            count += 3;
+                        }
+                    },
                     None => {
-                        if self.number_almost_wins(x0, x1, self.player_to_move.get_other_player()) > 0 {
+                        if self.number_almost_wins(x0, x1, Player::Player2) > 0 {
                             count += 1;
                         }
-                        if self.number_almost_wins(x0, x1, self.player_to_move) > 0 {
+                        if self.number_almost_wins(x0, x1, Player::Player1) > 0 {
                             count -= 1;
                         }
                     },
@@ -532,7 +531,7 @@ mod tests {
 
         println!("{}", board);
         assert!(board.board_winner() == Some(Player::Player1));
-        assert_eq!(board.score(), 1000);
+        assert_eq!(board.score(), -1000);
     }
 
     #[test]
@@ -545,17 +544,6 @@ mod tests {
         assert_eq!(board.number_almost_wins(2, 0, Player::Player2), 1);
     }
 
-    #[test]
-    fn test_3_2_in_a_row() {
-        let mut board = Board::new();
-        board.cells[2][0][0][1] = Tile::Player2;
-        board.cells[2][0][1][1] = Tile::Player2;
-        board.cells[2][0][2][1] = Tile::Player2;
-        board.player_to_move = Player::Player1;
-        println!("{}", board);
-        assert_eq!(board.number_almost_wins(2, 0, Player::Player2), 3);
-        assert_eq!(board.number_almost_wins(2, 0, Player::Player1), 0);
-    }
     #[test]
     fn test_2_in_a_col_and_dig() {
         let mut board = Board::new();
@@ -612,7 +600,19 @@ mod tests {
         assert_eq!(dummy_board.number_almost_wins(0, 0, Player::Player1), 0);
         assert_eq!(dummy_board.number_almost_wins(0, 0, Player::Player2), 0);
         assert_eq!(dummy_board.score(), 0);
+    }
 
+    #[test]
+    fn test_score_simple() {
+        let board = Board::new();
+        let moves = board.next_states();
+        let board = moves.get(0).unwrap().to_owned();
+        let moves = board.next_states();
+        let board = moves.get(3).unwrap().to_owned();
+        let moves = board.next_states();
+        let board = moves.get(0).unwrap().to_owned();
+        println!("{}", &board);
+        // assert!(board.score() < 0);
     }
 
 }
