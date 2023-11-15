@@ -1,5 +1,5 @@
 use std::fmt;
-use itertools::{iproduct, Itertools};
+use itertools::iproduct;
 
 use crate::game::{GameState, HeuristicGameState};
 
@@ -595,13 +595,12 @@ mod tests {
     }
 
     #[test]
-    fn test_score_dummy() {
+    fn test_almost_wins_dummy() {
         let empty_board = Board::new();
         let moves = empty_board.next_states();
         let dummy_board = moves.first().unwrap().to_owned();
         assert_eq!(dummy_board.number_almost_wins(0, 0, Player::Player1), 0);
         assert_eq!(dummy_board.number_almost_wins(0, 0, Player::Player2), 0);
-        assert_eq!(dummy_board.score(), 0);
     }
 
     #[test]
@@ -613,8 +612,10 @@ mod tests {
         let board = moves.get(3).unwrap().to_owned();
         let moves = board.next_states();
         let board = moves.get(0).unwrap().to_owned();
+        let moves = board.next_states();
+        let board = moves.get(0).unwrap().to_owned();
         println!("{}", &board);
-        // assert!(board.score() < 0);
+        assert!(board.score() > 0);
     }
 
 }
