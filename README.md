@@ -11,7 +11,7 @@ I don't believe that any of these optimisations will decrease the search space a
 
 _This repo should probably be called 4DTicTacToe_
 
-## Todo list
+## Roadmap
 
 - [x] make scoring function absolute
 - [x] fix mini max
