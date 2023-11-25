@@ -1,7 +1,7 @@
 use std::fmt;
 use itertools::iproduct;
 
-use crate::game::{GameState, HeuristicGameState};
+use crate::game::{GameState, Heuristic};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Player {
@@ -337,7 +337,6 @@ impl<'a> TicMove<'a> {
 }
 
 impl GameState for Board {
-    type StateImplementation = Board;
     fn next_states(&self) -> Vec<Board> {
         let mut states: Vec<Board> = Vec::new();
         for m in TicMove::iter_moves(self).map(|m| m.do_move()) {
@@ -349,20 +348,20 @@ impl GameState for Board {
 
 pub struct AlmostWinHeuristic {}
 
-impl HeuristicGameState<AlmostWinHeuristic> for Board {
+impl Heuristic<Board> for AlmostWinHeuristic {
     type Score = i32;
-    fn score(&self) -> Self::Score {
-        if self.board_winner() == Some(Player::Player1) {
+    fn score(board: &Board) -> Self::Score {
+        if board.board_winner() == Some(Player::Player1) {
             return -1000;
         }
-        if self.board_winner() == Some(Player::Player2) {
+        if board.board_winner() == Some(Player::Player2) {
             return 1000;
         }
 
         let mut count = 0;
         for x0 in 0..3 {
             for x1 in 0..3 {
-                match self.single_board_winner(x0, x1) {
+                match board.single_board_winner(x0, x1) {
                     Some(player) => match player {
                         Player::Player1 => {
                             count -= 3;
@@ -372,10 +371,10 @@ impl HeuristicGameState<AlmostWinHeuristic> for Board {
                         }
                     },
                     None => {
-                        if self.number_almost_wins(x0, x1, Player::Player2) > 0 {
+                        if board.number_almost_wins(x0, x1, Player::Player2) > 0 {
                             count += 1;
                         }
-                        if self.number_almost_wins(x0, x1, Player::Player1) > 0 {
+                        if board.number_almost_wins(x0, x1, Player::Player1) > 0 {
                             count -= 1;
                         }
                     },
@@ -533,7 +532,7 @@ mod tests {
 
         println!("{}", board);
         assert!(board.board_winner() == Some(Player::Player1));
-        assert_eq!(board.score(), -1000);
+        assert_eq!(AlmostWinHeuristic::score(&board), -1000);
     }
 
     #[test]
@@ -559,7 +558,7 @@ mod tests {
         println!("{}", board);
 
         assert_eq!(board.number_almost_wins(2, 0, Player::Player2) + board.number_almost_wins(1, 1, Player::Player2), 2);
-        assert_eq!(board.score(), 2);
+        assert_eq!(AlmostWinHeuristic::score(&board), 2);
     }
 
     #[test]
@@ -582,7 +581,7 @@ mod tests {
         board.cells[1][1][0][1] = Tile::Player1;
         board.cells[1][1][2][1] = Tile::Player1;
         println!("{}", board);
-        assert_eq!(board.score(), -3)
+        assert_eq!(AlmostWinHeuristic::score(&board), -3)
     }
 
     #[test]
@@ -591,7 +590,7 @@ mod tests {
         let moves = empty_board.next_states();
         let board1 = moves.first().unwrap().to_owned();
         let board2 = moves.last().unwrap().to_owned();
-        assert_eq!(board1.score(), board2.score());
+        assert_eq!(AlmostWinHeuristic::score(&board1), AlmostWinHeuristic::score(&board2));
     }
 
     #[test]
@@ -615,7 +614,7 @@ mod tests {
         let moves = board.next_states();
         let board = moves.get(0).unwrap().to_owned();
         println!("{}", &board);
-        assert!(board.score() > 0);
+        assert!(AlmostWinHeuristic::score(&board) > 0);
     }
 
 }
