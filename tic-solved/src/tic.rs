@@ -387,6 +387,7 @@ impl Heuristic<Board> for AlmostWinHeuristic {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test]

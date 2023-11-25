@@ -2,7 +2,6 @@ use std::io::{self, Write};
 
 use crate::tic::*;
 use crate::game::*;
-use crate::minmax::*;
 
 // TODO:
 // - make a HumanStrategy and make this func take two strategies.
