@@ -5,6 +5,7 @@ use crate::game::*;
 use crate::minmax::*;
 
 // TODO:
+// - make a HumanStrategy and make this func take two strategies.
 // - Refactor this, such that it runs the game loop but doesn't have anything to do with terminal
 //   by making TerminalHumanPlayerInterface that implements HumanPlayerInterface
 
