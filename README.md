@@ -33,4 +33,6 @@ _This repo should probably be called 4DTicTacToe_
     - [ ] predictive calculation is also overkill - just wait on server for new gamestate
 - [ ] tcp server-client to forward to command pattern game loop
     - [ ] threading?
-- [ ] web gui that interfaces with server client command pattern game loop 
+- [ ] web gui that interfaces with server client command pattern game loop
+- [ ] game logging 
+- [ ] 48 hour challenge to beat the strategy in cover room online group chat with reward peppernoten 
