@@ -1,12 +1,12 @@
 use std::io::{self, Write};
 
-use crate::{game::{GameStrategy, GameState}, tic::{Board, print_on_board}};
+use crate::{tic_simulator::Strategy, tic::{Board, print_on_board}};
 
 pub struct HumanTerminalStrategy {}
 
-impl GameStrategy<Board> for HumanTerminalStrategy {
+impl Strategy for HumanTerminalStrategy {
     fn get_move(&self, board: &Board) -> Option<Board> {
-        let moves = board.next_states();
+        let moves = board.get_legal_boards();
         if moves.is_empty() {
             return None;
         }

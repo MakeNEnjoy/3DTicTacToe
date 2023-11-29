@@ -1,10 +1,10 @@
 use std::fmt;
 use itertools::iproduct;
 
-use crate::game::{GameState, Heuristic};
+use crate::minmax::{GameState, Heuristic};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum Player {
+pub enum Player {
     Player1,
     Player2
 }
@@ -224,6 +224,38 @@ impl Board {
     
         diagonal_win
     }
+    pub fn who_turn(&self) -> Player {
+        let mut player1_count = 0;
+        let mut player2_count = 0;
+
+        for i in 0..3 {
+            for j in 0..3 {
+                for k in 0..3 {
+                    for l in 0..3 {
+                        match self.cells[i][j][k][l] {
+                            Tile::Player1 => player1_count += 1,
+                            Tile::Player2 => player2_count += 1,
+                            Tile::Empty => {}
+                        }
+                    }
+                }
+            }
+        }
+
+        if player1_count <= player2_count {
+            Player::Player1
+        } else {
+            Player::Player2
+        }
+    }
+    
+    pub fn get_legal_boards(&self) -> Vec<Board> {
+        let mut states: Vec<Board> = Vec::new();
+        for m in TicMove::iter_moves(self).map(|m| m.do_move()) {
+            states.push(m);
+        }
+        states
+    }
 }
 
 impl fmt::Display for Board {
@@ -334,15 +366,13 @@ impl<'a> TicMove<'a> {
             last_move: Some(self.move_to_make),
         }
     }
+
+    
 }
 
 impl GameState for Board {
     fn next_states(&self) -> Vec<Board> {
-        let mut states: Vec<Board> = Vec::new();
-        for m in TicMove::iter_moves(self).map(|m| m.do_move()) {
-            states.push(m);
-        }
-        states
+        self.get_legal_boards()
     }
 }
 
