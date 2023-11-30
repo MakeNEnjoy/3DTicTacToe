@@ -13,10 +13,9 @@ use tic_simulator::*;
 use tic_graphical_interface::*;
 
 fn main() {
-    // open_window();
-    let board = Board::new();
-    let strategy1= P1::new(5);
-    let strategy2 = P2 {};
-    let strategy3 = P1::new(5);
-    run_game(board, strategy1, strategy3);
+    open_window();
+    // let board = Board::new();
+    // let strategy1= P1::new(5);
+    // let strategy2 = P2 {};
+    // run_game(board, strategy1, strategy2);
 }
