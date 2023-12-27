@@ -26,7 +26,7 @@ fn get_move_player1(depth: usize, game_state: &Board) -> Option<Board> {
     if game_state.next_states().is_empty() {
         return None
     }
-    let (s, score) = min_score::<Board, AlmostWinHeuristic>(game_state, depth, None, None);
+    let (s, _) = min_score::<Board, AlmostWinHeuristic>(game_state, depth, None, None);
     Some(s)
 }
 
@@ -34,6 +34,6 @@ fn get_move_player2(depth: usize, game_state: &Board) -> Option<Board> {
     if game_state.next_states().is_empty() {
         return None
     }
-    let (s, score) = max_score::<Board, AlmostWinHeuristic>(game_state, depth, None, None);
+    let (s, _) = max_score::<Board, AlmostWinHeuristic>(game_state, depth, None, None);
     Some(s)
 }
