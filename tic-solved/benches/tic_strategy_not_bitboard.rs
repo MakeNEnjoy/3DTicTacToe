@@ -59,7 +59,7 @@ fn bench_empty(c: &mut Criterion) {
     group.sample_size(10);
     // group.bench_function("Alphabeta Empty", |b| b.iter(|| tic_alphabeta(&board, 7)));
 
-    for i in 3..8 {
+    for i in 3..15 {
         group.bench_with_input(BenchmarkId::new("Alphabeta Empty", i), &i, 
             |b, i| b.iter(|| tic_alphabeta(&board, *i)));
     }

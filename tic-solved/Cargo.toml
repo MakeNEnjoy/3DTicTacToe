@@ -5,6 +5,11 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bench]]
+name = "tic_strategy_not_bitboard"
+harness = false
+
+
 [dependencies]
 criterion = "0.5.1"
 dotenv = "0.15.0"
