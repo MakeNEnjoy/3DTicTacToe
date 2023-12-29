@@ -1,5 +1,5 @@
 use tic_solved::{
-    tic_array_repr::{
+    tic_array::{
         tic::*,
         naive_strategy::MinimaxStrategy,
         alphabeta_strategy::AlphaBetaStrategy,

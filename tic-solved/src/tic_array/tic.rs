@@ -70,6 +70,51 @@ impl Board {
         }
     }
 
+    pub fn create_board(
+        cells: [[[[u8; 3]; 3]; 3]; 3],
+        last_move: Option<(usize, usize, usize, usize)>
+    ) -> Result<Self, String> {
+        let mut tile_cells = [[[[Tile::Empty; 3]; 3]; 3]; 3];
+        for i in 0..3 {
+            for j in 0..3 {
+                for k in 0..3 {
+                    for l in 0..3 {
+                        tile_cells[i][j][k][l] = match cells[i][j][k][l] {
+                            0 => Tile::Empty,
+                            1 => Tile::Player1,
+                            2 => Tile::Player2,
+                            _ => return Err("Cells parameter".to_string())
+                        };
+                    }
+                    
+                }
+            }
+        }
+
+        let mut board = Board {cells:tile_cells, player_to_move: Player::Player1, last_move };
+        board.player_to_move = board.who_turn();
+        Ok(board)
+    }
+
+    pub fn to_arr(&self) -> ([[[[u8; 3]; 3]; 3]; 3], Option<(usize, usize, usize, usize)>) {
+        let mut cells = [[[[0; 3]; 3]; 3]; 3];
+        for i in 0..3 {
+            for j in 0..3 {
+                for k in 0..3 {
+                    for l in 0..3 {
+                        cells[i][j][k][l] = match self.cells[i][j][k][l] {
+                            Tile::Empty => 0,
+                            Tile::Player1 => 1,
+                            Tile::Player2 => 2,
+                        };
+                    }
+                }
+            }
+        }
+        
+        (cells, self.last_move)
+    }
+
     fn number_almost_wins(&self, x0: usize, x1: usize, player: Player) -> usize {
         let mut count = 0;
         // Check horizontal lines
@@ -178,7 +223,11 @@ impl Board {
         None
     }
 
-    fn board_winner(&self) -> Option<Player> {
+    fn single_board_tie(&self, x0: usize, x1: usize) -> bool {
+        self.cells[x0][x1].iter().all(|row| row.iter().all(|&cell| cell != Tile::Empty))
+    }
+
+    pub fn board_winner(&self) -> Option<Player> {
         // Check horizontal lines
         let horizontal_win = (0..3).find_map(|x0| {
             let first = self.single_board_winner(x0, 0)?;
@@ -433,7 +482,7 @@ impl<'a> TicMove<'a> {
         }
 
         if let Some((_,_,y3,y4)) = self.board.last_move {
-            (x1 == y3 && x2 == y4) || self.board.single_board_winner(y3, y4).is_some()
+            (x1 == y3 && x2 == y4) || self.board.single_board_winner(y3, y4).is_some() || self.board.single_board_tie(y3, y4)
         } else {
             true
         }
@@ -475,6 +524,9 @@ impl Heuristic<Board> for AlmostWinHeuristic {
         }
         if board.board_winner() == Some(Player::Player2) {
             return 1000;
+        }
+        if board.get_legal_boards().len() == 0 {
+            return 0;
         }
 
         let mut count = 0;

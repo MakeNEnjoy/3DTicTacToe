@@ -1,5 +1,5 @@
 use crate::{
-    tic_array_repr::{tic_simulator::Strategy, tic::*},
+    tic_array::{tic_simulator::Strategy, tic::*},
     minmax::{*, naive::*}
 };
 

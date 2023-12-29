@@ -1,2 +1,2 @@
-pub mod tic_array_repr;
+pub mod tic_array;
 pub mod minmax;

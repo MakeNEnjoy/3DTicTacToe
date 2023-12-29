@@ -1,7 +1,7 @@
 use std::{path::Path, fs};
 
 use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
-use tic_solved::tic_array_repr::{
+use tic_solved::tic_array::{
     naive_strategy::MinimaxStrategy as P1,
     alphabeta_strategy::AlphaBetaStrategy as S2,
     tic::*,

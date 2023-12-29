@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use crate::tic_array_repr::{tic_simulator::Strategy, tic::{Board, print_on_board}};
+use crate::tic_array::{tic_simulator::Strategy, tic::{Board, print_on_board}};
 
 pub struct HumanTerminalStrategy {}
 

@@ -1,5 +1,5 @@
 use log::info;
-use crate::tic_array_repr::tic::*;
+use crate::tic_array::tic::*;
 
 // TODO:
 // - Refactor this, such that it runs the game loop but doesn't have anything to do with terminal
