@@ -1,2 +1,4 @@
 tic-solved/target/*
 .vscode
+tic-solved/.DS_Store
+.DS_Store
