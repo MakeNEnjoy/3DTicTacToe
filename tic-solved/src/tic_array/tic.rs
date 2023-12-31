@@ -3,7 +3,7 @@ use itertools::iproduct;
 
 use crate::minmax::{GameState, Heuristic};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Player {
     Player1,
     Player2
@@ -18,7 +18,7 @@ impl Player {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 enum Tile {
     Player1,
     Player2,
@@ -54,11 +54,27 @@ impl From<Tile> for Option<Player> {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, Eq, Hash, Debug, PartialOrd, Ord)]
 pub struct Board {
     cells: [[[[Tile; 3]; 3]; 3]; 3],
     player_to_move: Player,
     last_move: Option<(usize, usize, usize, usize)>,
+}
+
+impl PartialEq for Board {
+    fn eq(&self, other: &Self) -> bool {
+        if self.cells != other.cells {
+            return false;
+        }
+        if self.player_to_move != other.player_to_move {
+            return false;
+        }
+        match (&self.last_move, &other.last_move) {
+            (Some((_, _, x1, y1)), Some((_, _, x2, y2))) => x1 == x2 && y1 == y2,
+            (None, None) => true,
+            _ => false,
+        }
+    }
 }
 
 impl Board {

@@ -1,5 +1,7 @@
 
-use crate::{tic_array::tic::*, minmax::GameState};
+use itertools::Itertools;
+
+use crate::{tic_array::tic::*, minmax::{GameState, Heuristic}};
 use std::fmt;
 
 struct D(u128);
@@ -25,11 +27,11 @@ impl fmt::Debug for BoardCounts {
     }
 }
 
-#[derive(Clone)]
-struct BitBoard {
+#[derive(Clone, PartialEq)]
+pub struct BitBoard {
     player1: u128,
     player2: u128,
-    last_move: Option<u8>,
+    last_move: Option<u128>,
 }
 
 impl fmt::Debug for BitBoard {
@@ -47,70 +49,142 @@ const OVERALL_ROW_MASK: u128 = 0b110_110_110_110_110_110_110_110_110_110_110_110
 const OVERALL_LEFT_RIGHT_WIN: u128 = 0b100_000_000_000_000_000_000_000_000_000_100_000_000_000_000_000_000_000_000_000_100_000_000_000_000_000_000;
 const OVERALL_RIGHT_LEFT_WIN: u128 = 0b000_000_100_000_000_000_000_000_000_000_100_000_000_000_000_000_000_000_100_000_000_000_000_000_000_000_000;
 const CORNER_MASK: u128 = 0b100_100_100_000_000_000_000_000_000_100_100_100_000_000_000_000_000_000_100_100_100_000_000_000_000_000_000;
+const WHOLE_BOARD_MASK: u128 = 0b111_111_111_111_111_111_111_111_111_111_111_111_111_111_111_111_111_111_111_111_111_111_111_111_111_111_111;
+
+fn row_wins_single(counts: u128) -> u128 {
+    let onestep = (counts << 1) & COL_MASK;
+    let twostep = (counts << 2) & COL_MASK;
+    counts & onestep & twostep
+}
+
+fn col_wins_single(counts: u128) -> u128 {
+    let onestep = (counts << 9) & ROW_MASK;
+    let twostep = (counts << 18) & ROW_MASK;
+    counts & onestep & twostep
+}
+
+fn left_right_wins_single(counts: u128) -> u128 {
+    let onestep = (counts << 10) & LEFT_RIGHT_MASK;
+    let twostep = (counts << 20) & LEFT_RIGHT_MASK;
+
+    counts & onestep & twostep
+}
+
+fn right_left_wins_single(counts: u128) -> u128 {
+    let onestep = (counts << 8) & RIGHT_LEFT_MASK;
+    let twostep = (counts << 16) & RIGHT_LEFT_MASK;
+    counts & onestep & twostep
+}
+
+fn almost_wins_single(counts: u128) -> u128 {
+    let row = ((counts << 1) & COL_MASK) & counts;
+    let row_gap = ((((counts << 1) & COL_MASK) << 1) & COL_MASK) & counts;
+    let col = ((counts << 9) & ROW_MASK) & counts;
+    let col_gap = ((((counts << 9) & ROW_MASK) << 9) & ROW_MASK) & counts;
+    let left_right = ((counts << 10) & LEFT_RIGHT_MASK) & counts;
+    let left_right_gap = ((((counts << 10) & LEFT_RIGHT_MASK) << 10) & LEFT_RIGHT_MASK) & counts;
+    let right_left = ((counts << 8) & RIGHT_LEFT_MASK) & counts;
+    let right_left_gap = ((((counts << 8) & RIGHT_LEFT_MASK) << 8) & RIGHT_LEFT_MASK) & counts;
+    let combine = row | col | left_right | right_left
+                        | row_gap | col_gap | left_right_gap | right_left_gap;
+    let accumulate_into_col = combine | combine << 1 | combine << 2;
+    let accumulate = (accumulate_into_col | accumulate_into_col << 9 | accumulate_into_col << 18) & CORNER_MASK;
+    accumulate
+}
+
+fn all_wins_single(counts: u128) -> u128 {
+    let row = row_wins_single(counts);
+    let col = col_wins_single(counts);
+    let accumulate_left_right = left_right_wins_single(counts);
+    let right_left = right_left_wins_single(counts);
+
+    let accumulate_row = (row | (row << 9) | (row << 18)) & CORNER_MASK;
+
+    let accumulate_col = (col | (col << 1) | (col << 2)) & CORNER_MASK;
+
+    let accumulate_right_left = right_left << 2;
+    let all_wins = accumulate_col | accumulate_row | accumulate_left_right | accumulate_right_left;
+    all_wins
+}
+
+fn count_to_mask(counts: u128) -> u128 {
+    let col_mask = counts | (counts >> 9) | (counts >> 18);
+    col_mask | (col_mask >> 1) | (col_mask >> 2)
+}
+
+struct LegalBoards {
+    not_allowed_moves: u128,
+    original_state: BitBoard,
+    who_turn: Player
+}
+
+impl Iterator for LegalBoards {
+    type Item = BitBoard;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let ones = self.not_allowed_moves.trailing_ones();
+        assert!(ones <= 81);
+        if ones == 81 {
+            return None;
+        }
+        let next_move: u128 = 1 << ones;
+        let next_move_board: u128 = {
+            let k: u128 = (3*((ones%(9*3))/9) + ones % 3).into();
+            let board_idx = 3*9*(k/3) + (k%3)*3 + 20;
+            1 << board_idx
+        };
+        self.not_allowed_moves = self.not_allowed_moves | next_move;
+        assert!((self.original_state.player1 | self.original_state.player2) & next_move == 0);
+        let next_board = match self.who_turn {
+            Player::Player1 => BitBoard {
+                player1: self.original_state.player1 | next_move,
+                player2: self.original_state.player2,
+                last_move: Some(next_move_board),
+            },
+            Player::Player2 => BitBoard {
+                player1: self.original_state.player1,
+                player2: self.original_state.player2 | next_move,
+                last_move: Some(next_move_board),
+            }
+        };
+        
+        Some(next_board)
+    }
+}
 
 impl BitBoard {
     pub fn new() -> Self {
         BitBoard { player1: 0, player2: 0, last_move: None }
     }
-    
+
     fn row_wins(&self) -> BoardCounts {
-        let onestep = (self.player1 << 1) & COL_MASK;
-        let twostep = (self.player1 << 2) & COL_MASK;
-        let player1 = self.player1 & onestep & twostep;
-        let onestep = (self.player2 << 1) & COL_MASK;
-        let twostep = (self.player2 << 2) & COL_MASK;
-        let player2 = self.player2 & onestep & twostep;
+        let player1 = row_wins_single(self.player1);
+        let player2 = row_wins_single(self.player2);
         BoardCounts {player1, player2}
     }
 
     fn col_wins(&self) -> BoardCounts {
-        let onestep = (self.player1 << 9) & ROW_MASK;
-        let twostep = (self.player1 << 18) & ROW_MASK;
-        let player1 = self.player1 & onestep & twostep;
-        let onestep = (self.player2 << 9) & ROW_MASK;
-        let twostep = (self.player2 << 18) & ROW_MASK;
-        let player2 = self.player2 & onestep & twostep;
-        
+        let player1 = col_wins_single(self.player1);
+        let player2 = col_wins_single(self.player2);
         BoardCounts {player1, player2}
     }
 
     fn left_right_wins(&self) -> BoardCounts {
-        let onestep = (self.player1 << 10) & LEFT_RIGHT_MASK;
-        let twostep = (self.player1 << 20) & LEFT_RIGHT_MASK;
-        let player1 = self.player1 & onestep & twostep;
-        let onestep = (self.player2 << 10) & LEFT_RIGHT_MASK;
-        let twostep = (self.player2 << 20) & LEFT_RIGHT_MASK;
-        let player2 = self.player2 & onestep & twostep;
+        let player1 = left_right_wins_single(self.player1);
+        let player2 = left_right_wins_single(self.player2);
         BoardCounts {player1, player2}
     }
 
     fn right_left_wins(&self) -> BoardCounts {
-        let onestep = (self.player1 << 8) & RIGHT_LEFT_MASK;
-        let twostep = (self.player1 << 16) & RIGHT_LEFT_MASK;
-        let player1 = self.player1 & onestep & twostep;
-        let onestep = (self.player2 << 8) & RIGHT_LEFT_MASK;
-        let twostep = (self.player2 << 16) & RIGHT_LEFT_MASK;
-        let player2 = self.player2 & onestep & twostep;
+        let player1 = right_left_wins_single(self.player1);
+        let player2 = right_left_wins_single(self.player2);
         BoardCounts {player1, player2}
     }
 
     fn all_wins(&self) -> BoardCounts {
-        let BoardCounts {player1: row1, player2: row2} = self.row_wins();
-        let BoardCounts {player1: col1, player2: col2} = self.col_wins();
-        let BoardCounts {player1: accumulate_left_right1, player2: accumulate_left_right2} = self.left_right_wins();
-        let BoardCounts {player1: right_left1, player2: right_left2} = self.right_left_wins();
-        
-        let accumulate_row1 = (row1 | (row1 << 9) | (row1 << 18)) & CORNER_MASK;
-        let accumulate_row2 = (row2 | (row2 << 9) | (row2 << 18)) & CORNER_MASK;
-
-        let accumulate_col1 = (col1 | (col1 << 1) | (col1 << 2)) & CORNER_MASK;
-        let accumulate_col2 = (col2 | (col2 << 1) | (col2 << 2)) & CORNER_MASK;
-
-        let accumulate_right_left1 = right_left1 << 2;
-        let accumulate_right_left2 = right_left2 << 2;
-        let all_wins1 = accumulate_col1 | accumulate_row1 | accumulate_left_right1 | accumulate_right_left1;
-        let all_wins2 = accumulate_col2 | accumulate_row2 | accumulate_left_right2 | accumulate_right_left2;
-        BoardCounts { player1: all_wins1, player2: all_wins2 }
+        let player1 = all_wins_single(self.player1);
+        let player2 = all_wins_single(self.player2);
+        BoardCounts {player1, player2}
     }
 
     fn overall_col_win(&self, BoardCounts{player1, player2}: BoardCounts) -> Option<Player> {
@@ -173,8 +247,7 @@ impl BitBoard {
         }
     }
 
-    pub fn who_win(&self) -> Option<Player> {
-        let wins = self.all_wins();
+    fn who_win(&self, wins: BoardCounts) -> Option<Player> {
         let row = self.overall_row_win(wins.clone());
         let col = self.overall_col_win(wins.clone());
         let left_right = self.overall_left_right_win(wins.clone());
@@ -200,31 +273,43 @@ impl BitBoard {
 
     fn full_boards(&self) -> u128 {
         let combined = self.player1 | self.player2;
-        todo!()    
+        row_wins_single(col_wins_single(combined))
     }
 
-    fn not_allowed_moves(&self) -> BoardCounts {
-        let BoardCounts {player1: row1, player2: row2} = self.row_wins();
-        let BoardCounts {player1: col1, player2: col2} = self.col_wins();
-        let BoardCounts {player1: accumulate_left_right1, player2: accumulate_left_right2} = self.left_right_wins();
-        let BoardCounts {player1: right_left1, player2: right_left2} = self.right_left_wins();
-        
-        let accumulate_row1 = (row1 | (row1 << 9) | (row1 << 18)) & CORNER_MASK;
-        let accumulate_row2 = (row2 | (row2 << 9) | (row2 << 18)) & CORNER_MASK;
-
-        let accumulate_col1 = (col1 | (col1 << 1) | (col1 << 2)) & CORNER_MASK;
-        let accumulate_col2 = (col2 | (col2 << 1) | (col2 << 2)) & CORNER_MASK;
-
-        let accumulate_right_left1 = right_left1 << 2;
-        let accumulate_right_left2 = right_left2 << 2;
-        let all_wins1 = accumulate_col1 | accumulate_row1 | accumulate_left_right1 | accumulate_right_left1;
-        let all_wins2 = accumulate_col2 | accumulate_row2 | accumulate_left_right2 | accumulate_right_left2;
-        BoardCounts { player1: all_wins1, player2: all_wins2 }  
+    fn not_allowed_moves(&self) -> u128 {
+        let BoardCounts { player1: wins1, player2: wins2} = self.all_wins();
+        let filled_tiles = self.player1 | self.player2;
+        let combined_wins = wins1 | wins2;
+        let last_move_mask = if let Some(m) = self.last_move {
+            if m & (combined_wins | self.full_boards()) == 0 {
+                !count_to_mask(m) & WHOLE_BOARD_MASK
+            } else {
+                0
+            }
+        } else {
+            0
+        };
+        let wins_mask = count_to_mask(combined_wins);
+        wins_mask | filled_tiles | last_move_mask
     }
 
-    // fn get_legal_boards(&self) -> impl Iterator<Item = Self> {
-    //     todo!()
-    // }
+    fn who_turn(&self) -> Player {
+        match (self.player1 | self.player2).count_ones() % 2 {
+            0 => Player::Player1,
+            1 => Player::Player2,
+            _ => panic!("Maths is broken!")
+        }   
+    }
+
+    fn get_legal_boards(&self) -> impl Iterator<Item = Self> {
+        let moves_mask = self.not_allowed_moves();
+        let who_turn = self.who_turn();
+        LegalBoards {
+            original_state: self.clone(),
+            not_allowed_moves: moves_mask,
+            who_turn: who_turn,
+        }
+    }
 }
 
 impl From<Board> for BitBoard {
@@ -248,7 +333,8 @@ impl From<Board> for BitBoard {
             }
         }
         let last_move = if let Some((_, _, x, y)) = last_to_move {
-            Some((3*x + y).try_into().unwrap())
+            let n = 3*y + x*3*9 + 20;
+            Some(1 << n)
         } else {
             None
         };
@@ -277,7 +363,8 @@ impl Into<Board> for BitBoard {
             }
         }
         let last_move: Option<(usize, usize, usize, usize)> = if let Some(m) = self.last_move {
-            Some((0, 0, ( m/3 ).into(), (m % 3).into()))
+            let n: usize = m.ilog2().try_into().unwrap();
+            Some((0, 0,  n/(3*9) , (n % 9)/3))
         } else {
             None
         };
@@ -290,18 +377,54 @@ impl Into<Board> for BitBoard {
 
 impl GameState for BitBoard {
     fn next_states(&self) -> Vec<Self> {
-        todo!()
+        self.get_legal_boards().collect_vec()
+    }
+}
+
+impl Heuristic<BitBoard> for AlmostWinHeuristic {
+    type Score = i32;
+
+    fn score(game_state: &BitBoard) -> Self::Score {
+        let wins = game_state.all_wins();
+        let is_won = game_state.who_win(wins.clone());
+        match is_won {
+            Some(Player::Player1) => return -1000,
+            Some(Player::Player2) => return 1000,
+            None => {}
+        }
+        let wins1 = wins.player1.count_ones();
+        let almost_wins1 = almost_wins_single(game_state.player1);
+        let almost_wins1_count = (almost_wins1 & !wins.player1).count_ones(); 
+        let wins2 = wins.player2.count_ones();
+        let almost_wins2 = almost_wins_single(game_state.player2);
+        let almost_wins2_count = (almost_wins2 & !wins.player2).count_ones(); 
+
+        (wins2 * 3 + almost_wins2_count - wins1 * 3 - almost_wins1_count).try_into().unwrap()
+    }
+}
+
+pub struct WinHeuristic {}
+
+impl Heuristic<BitBoard> for WinHeuristic {
+    type Score = i32;
+    fn score(game_state: &BitBoard) -> Self::Score {
+        
+        let wins = game_state.all_wins();
+        let p1: i32 = wins.player1.count_ones().try_into().unwrap();
+        let p2: i32 = wins.player2.count_ones().try_into().unwrap();
+        p2 - p1
     }
 }
 
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+    use std::collections::HashSet;
     use std::fs;
     use std::path::PathBuf;
-    use crate::tic_array::tic::*;
 
-    use super::BitBoard;
+    use crate::tic_array::tic::*;
+    use super::*;
 
     #[rstest]
     fn test_bitmap_conversion(#[files("positions/*.txt")] file_path: PathBuf) {
@@ -323,6 +446,35 @@ mod tests {
         let board_result: BoardResult = board_str.as_str().into();
         let board = board_result.into_inner().unwrap();
         let bitmap: BitBoard = board.clone().into();
-        assert_eq!(board.board_winner(), bitmap.who_win());
+        assert_eq!(board.board_winner(), bitmap.who_win(bitmap.all_wins()));
+    }
+
+    #[rstest]
+    fn test_get_legal_moves(#[files("positions/*.txt")] file_path: PathBuf) {
+        let board_str = fs::read_to_string(file_path)
+            .expect("Failed to read board file");
+
+        let board_result: BoardResult = board_str.as_str().into();
+        let board = board_result.into_inner().unwrap();
+        let bitmap: BitBoard = board.clone().into();
+        let next_boards_bitmap = bitmap.get_legal_boards().collect_vec();
+        let mut next_board_board1: Vec<Board> = next_boards_bitmap.into_iter().map(|x| x.into()).collect();
+        let mut next_board_board2 = board.next_states();
+        next_board_board1.sort();
+        next_board_board2.sort();
+        assert_eq!(next_board_board1, next_board_board2);
+    }
+
+    #[rstest]
+    fn test_almost_wins(#[files("positions/*.txt")] file_path: PathBuf) {
+        let board_str = fs::read_to_string(file_path)
+            .expect("Failed to read board file");
+
+        let board_result: BoardResult = board_str.as_str().into();
+        let board = board_result.into_inner().unwrap();
+        let bitmap: BitBoard = board.clone().into();
+        println!("{:?}", D(bitmap.player1));
+        println!("{:?}", D(almost_wins_single(bitmap.player1)));
+        // assert!(false);
     }
 }

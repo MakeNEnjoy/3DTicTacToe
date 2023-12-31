@@ -4,6 +4,7 @@ use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
 use tic_solved::tic_array::{
     naive_strategy::MinimaxStrategy as P1,
     alphabeta_strategy::AlphaBetaStrategy as S2,
+    alphabeta_strategy_bitboard::AlphaBetaBitBoardStrategy as S3,
     tic::*,
     tic_simulator::*,
 };
@@ -15,6 +16,10 @@ fn tic_naive(board: &Board, depth: usize) {
 
 fn tic_alphabeta(board: &Board, depth: usize) {
     let strategy = S2::new(depth);
+    let _board = strategy.get_move(board).unwrap();
+}
+fn tic_alphabeta_bitboard(board: &Board, depth: usize) {
+    let strategy = S3::new(depth);
     let _board = strategy.get_move(board).unwrap();
 }
 
@@ -60,11 +65,16 @@ fn bench_empty(c: &mut Criterion) {
     // group.bench_function("Alphabeta Empty", |b| b.iter(|| tic_alphabeta(&board, 7)));
 
     for i in 3..15 {
-        group.bench_with_input(BenchmarkId::new("Alphabeta Empty", i), &i, 
-            |b, i| b.iter(|| tic_alphabeta(&board, *i)));
+        group.bench_with_input(BenchmarkId::new("Naive Minimax", i), &i, 
+            |b, i| b.iter(|| tic_naive(&board, *i)));
+        // group.bench_with_input(BenchmarkId::new("Alphabeta Empty", i), &i, 
+        //     |b, i| b.iter(|| tic_alphabeta(&board, *i)));
+        group.bench_with_input(BenchmarkId::new("Alphabeta Bit Board Empty", i), &i, 
+            |b, i| b.iter(|| tic_alphabeta_bitboard(&board, *i)));
     }
 }
 
+// criterion_group!(benches, );
 criterion_group!(benches, bench_empty);
 // criterion_group!(benches, bench_single_positions);
 criterion_main!(benches);
