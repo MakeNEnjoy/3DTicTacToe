@@ -23,16 +23,8 @@ _This repo should probably be called 4DTicTacToe_
     - [ ] interface should not depend on game implementation 
     - [ ] implement local player game loop w.r to interface
     - [ ] should be asynchronously callable?
-- [ ] enum based game loop
-    - [ ] create game command
-    - [ ] join game command
-    - [ ] leave game command
-    - [ ] play move command
-    - [ ] there is probably a response enum
-    - [ ] observer pattern is over engineered - all clients get all updates
-    - [ ] predictive calculation is also overkill - just wait on server for new gamestate
-- [ ] tcp server-client to forward to command pattern game loop
-    - [ ] threading?
-- [ ] web gui that interfaces with server client command pattern game loop
 - [ ] game logging 
-- [ ] 48 hour challenge to beat the strategy in cover room online group chat with reward peppernoten 
+- [ ] i feel like the depth doesn't seem to matter a lot, investigate this further
+    - [ ] measure the volatility of strategy w.r to depth
+    - [ ] make a depth matrix winrate of player 1 depth vs player 2 depth.
+- [ ] investigate the quality of first moves and what effect my sorting has
